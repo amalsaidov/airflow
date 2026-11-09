@@ -36,6 +36,7 @@ from pydantic_ai.exceptions import ModelRetry, UnexpectedModelBehavior
 from pydantic_ai.messages import (
     ModelMessage,
     ModelResponse,
+    RetryPromptPart,
     TextPart,
     ToolCallPart,
     ToolReturnPart,
@@ -564,7 +565,9 @@ def _query_then_answer(sql: str, *, fail_final: list[bool]):
             return ModelResponse(parts=[ToolCallPart("query", {"sql": sql})])
         if fail_final[0]:
             raise RuntimeError("worker died")
-        return ModelResponse(parts=[TextPart(f"answer: {messages[-1].parts[0].content}")])
+        answered = messages[-1].parts[0]
+        assert isinstance(answered, (RetryPromptPart, ToolReturnPart))
+        return ModelResponse(parts=[TextPart(f"answer: {answered.content}")])
 
     return model_fn
 
